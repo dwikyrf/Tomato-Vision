@@ -1,0 +1,21 @@
+# virtual environment
+myenv/
+venv/
+.env/
+*.pyc
+__pycache__/
+
+# YOLO training folder
+yolov5/
+runs/
+weights/
+*.pt
+
+# build artifacts
+*.zip
+*.rar
+*.7z
+
+# uploads
+static/uploads/*
+!static/uploads/placeholder.jpg
