@@ -1,135 +1,57 @@
-from flask import Flask, request, render_template, redirect, url_for, send_from_directory, Response
-from werkzeug.utils import secure_filename
-import torch
-from pathlib import Path
+from flask import Flask, render_template, request, redirect, url_for
 import os
-import glob
-import pathlib
-import glob
-import cv2
-# Set pathlib settings untuk Windows
-temp = pathlib.PosixPath
-pathlib.PosixPath = pathlib.WindowsPath
-
+from pathlib import Path
+import torch
+from PIL import Image
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'static/uploads/'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config["UPLOAD_FOLDER"] = "static/uploads"
 
-# Ensure upload folder exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Pastikan folder upload ada
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-# Load YOLOv5 model
-# model = torch.hub.load('ultralytics/yolov5', 'custom', path=Path('yolov5/best.pt').as_posix(), force_reload=True)
-# model.eval()
+# Load model YOLO sekali di awal
+MODEL_PATH = Path("models/best.pt")
 model = torch.hub.load(
-    'yolov5',                      # nama folder lokal repo
-    'custom',                      # type model
-    path=Path('yolov5/best.pt').as_posix(),  # path ke weight
-    source='local',                # <-- ini penting: pakai lokal, bukan GitHub
-    force_reload=True
+    "ultralytics/yolov5",
+    "custom",
+    path=str(MODEL_PATH),
+    source="github"  # diunduh dari GitHub, tidak perlu commit folder yolov5
 )
-model.eval()
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-# Define class names
-class_names = ['early_blight', 'fresh', 'healthy', 'late_blight', 'leaf_mold', 'rotten', 'yellow_leaf_curl']
 
-def gen_frames():
-    camera = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Use DirectShow backend
-    while True:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
-            # Perform detection
-            results = model(frame)
-            
-            # Extract bounding boxes and labels
-            for *xyxy, conf, cls in results.xyxy[0].numpy():
-                label = f'{class_names[int(cls)]} {conf:.2f}'
-                cv2.rectangle(frame, (int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3])), (255, 0, 0), 2)
-                cv2.putText(frame, label, (int(xyxy[0]), int(xyxy[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
-            
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-@app.route('/', methods=['GET', 'POST'])
+@app.route("/", methods=["GET", "POST"])
 def index():
-    if request.method == 'POST':
-        if 'file' not in request.files:
+    if request.method == "POST":
+        if "image" not in request.files:
             return redirect(request.url)
-        file = request.files['file']
-        if file.filename == '':
+
+        file = request.files["image"]
+        if file.filename == "":
             return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
 
-            # Run inference
-            results = model(filepath)
-            
-            # Save results
-            results_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'results')
-            os.makedirs(results_dir, exist_ok=True)
-            results.save(save_dir=results_dir)
+        if file:
+            # Simpan file upload
+            save_path = Path(app.config["UPLOAD_FOLDER"]) / file.filename
+            file.save(save_path)
 
-            # Get the latest result directory
-            actual_results_dir = max(glob.glob(os.path.join(app.config['UPLOAD_FOLDER'], 'results*')), key=os.path.getmtime)
+            # Inference YOLO
+            results = model(str(save_path))
 
-            # Find the result image
-            result_image_path = next((f for f in glob.glob(os.path.join(actual_results_dir, '*')) if f.endswith(('.jpg', '.jpeg', '.png'))), None)
+            # Simpan hasil (annotated image) ke file baru
+            result_img_path = Path(app.config["UPLOAD_FOLDER"]) / f"result_{file.filename}"
+            results.render()  # hasil anotasi disimpan di results.ims[0]
+            img = Image.fromarray(results.ims[0])
+            img.save(result_img_path)
 
-            if result_image_path and os.path.exists(result_image_path):
-                # Ambil deteksi dari YOLOv5 tanpa pandas
-                detections = results.xyxy[0]  # tensor [N, 6] -> [x1, y1, x2, y2, conf, cls]
+            return render_template(
+                "result.html",
+                original_image=url_for("static", filename=f"uploads/{file.filename}"),
+                result_image=url_for("static", filename=f"uploads/result_{file.filename}")
+            )
 
-                if len(detections) > 0:
-                    # Ambil kelas dari deteksi pertama
-                    cls_id = int(detections[0, -1].item())  # kolom terakhir = class id
-                    label = results.names[cls_id]           # mapping id -> nama class (dari YOLO)
-                else:
-                    label = 'No objects detected'
+    return render_template("index.html")
 
-                result_image_url = url_for('static', filename=os.path.relpath(result_image_path, 'static'))
-            else:
-                label = 'No objects detected'
-                result_image_url = None
 
-            
-
-    return render_template('index.html')
-    
-
-@app.route('/uploads/<path:filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-@app.route('/about')
-def about():
-    return render_template('about.html')
-
-@app.route('/contact')
-def contact():
-    return render_template('contact.html')
-
-@app.route('/detection', methods=['POST'])
-def detection():
-    return render_template('detection.html')
-
-@app.route('/camera', methods=['POST'])
-def camera():
-    return render_template('camera.html')
-
-@app.route('/video_feed')
-def video_feed():
-    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-if __name__ == '__main__':
-    import os
-    port = int(os.environ.get('PORT', 5000))
-    app.run(debug=False, host='0.0.0.0', port=port)
-
+if __name__ == "__main__":
+    # Untuk run lokal
+    app.run(host="0.0.0.0", port=5000, debug=True)
