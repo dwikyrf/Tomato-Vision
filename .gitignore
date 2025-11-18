@@ -21,9 +21,13 @@ static/uploads/*
 !static/uploads/placeholder.jpg
 # HAPUS baris "yolov5/" yang lama, GANTI dengan ini:
 
+# HAPUS baris "yolov5/" yang lama, GANTI dengan ini:
+
 # Izinkan folder yolov5, tapi abaikan folder berat di dalamnya:
 yolov5/runs/
 yolov5/.git/
 yolov5/__pycache__/
 yolov5/models/*.pt
 !yolov5/models/yolov5s.yaml
+# Kecuali file best.pt Anda (jika ada di dalam situ)
+!yolov5/best.pt
