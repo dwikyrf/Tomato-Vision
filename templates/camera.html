@@ -1,171 +1,183 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
-  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kamera - TomatoVision</title>
+    <link href="{{ url_for('static', filename='assets/css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
 
-  <title>Hasil Prediksi - TomatoVision</title>
-
-  <!-- Favicons (opsional, kalau mau konsisten) -->
-  <link href="{{ url_for('static', filename='assets/img/favicon.png') }}" rel="icon">
-  <link href="{{ url_for('static', filename='assets/img/apple-touch-icon.png') }}" rel="apple-touch-icon">
-
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Raleway:300,300i,400,400i,500,500i,600,600i,700,700i"
-        rel="stylesheet">
-
-  <!-- Vendor CSS Files -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='assets/vendor/bootstrap/css/bootstrap.min.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='assets/vendor/animate.css/animate.min.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='assets/vendor/bootstrap-icons/bootstrap-icons.css') }}">
-
-  <!-- Template Main CSS File -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/style.css') }}">
-
-  <style>
-    body {
-      background: #f8f9fa;
-    }
-
-    #result-section {
-      padding-top: 120px;
-      padding-bottom: 40px;
-    }
-
-    .badge-tag {
-      display: inline-block;
-      font-size: 11px;
-      letter-spacing: .05em;
-      text-transform: uppercase;
-      padding: 0.3rem 0.7rem;
-      border-radius: 999px;
-      background: rgba(220, 53, 69, 0.08);
-      color: #dc3545;
-      font-weight: 600;
-    }
-
-    .result-card {
-      border-radius: 20px;
-      border: none;
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.06);
-    }
-
-    .prediction-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0.25rem 0.7rem;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      background: rgba(25, 135, 84, 0.08);
-      color: #198754;
-      font-weight: 600;
-    }
-
-    .table-container {
-      max-height: 360px;
-      overflow-y: auto;
-      border-radius: 12px;
-      border: 1px solid #e9ecef;
-      background: #fff;
-      padding: 10px;
-    }
-
-  </style>
+    <style>
+        /* Tampilan Kamera Full Responsive */
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+            transform: scaleX(-1); /* Efek cermin agar natural */
+        }
+        .controls {
+            padding: 20px;
+            text-align: center;
+            background: #fff;
+        }
+        .btn-capture {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: #e96b56; /* Warna merah tomat */
+            border: 4px solid #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        .btn-capture:active {
+            transform: scale(0.9);
+            background-color: #d14b36;
+        }
+        #loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            z-index: 10;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+    </style>
 </head>
-
 <body>
 
-  <!-- ======= Header (sama seperti halaman lain) ======= -->
-  <header id="header" class="fixed-top d-flex align-items-center">
-    <div class="container d-flex align-items-center justify-content-between">
-
-      <h1 class="logo me-auto">
-        <a href="{{ url_for('index') }}">Tomato<span>Vision</span></a>
-      </h1>
-
-      <nav id="navbar" class="navbar">
-        <ul>
-          <li><a href="{{ url_for('index') }}">Home</a></li>
-          <li><a href="{{ url_for('about') }}">About Us</a></li>
-          <li><a href="{{ url_for('contact') }}">Contact</a></li>
-        </ul>
-        <i class="bi bi-list mobile-nav-toggle"></i>
-      </nav><!-- .navbar -->
-
-    </div>
-  </header><!-- End Header -->
-
-  <main id="main">
-
-    <section id="result-section">
-      <div class="container">
-
-        <div class="row justify-content-center mb-4">
-          <div class="col-lg-8 text-center">
-            <span class="badge-tag mb-2">Prediction Result</span>
-            <h2>Hasil Prediksi Daun Tomat</h2>
-            <p class="text-muted">
-              Berikut adalah hasil prediksi kualitas/kelas daun tomat berdasarkan citra yang Anda unggah.
-            </p>
-          </div>
+    <header id="header" class="d-flex align-items-center" style="background:#4e4e4e; padding:10px;">
+        <div class="container d-flex align-items-center justify-content-between">
+            <h1 class="logo"><a href="{{ url_for('index') }}" class="text-white">TomatoVision</a></h1>
+            <nav id="navbar" class="navbar">
+                <ul>
+                    <li><a class="nav-link scrollto text-white" href="{{ url_for('index') }}">Home</a></li>
+                </ul>
+            </nav>
         </div>
+    </header>
 
-        <div class="row justify-content-center">
-          <div class="col-lg-8">
-            <div class="card result-card">
-              <div class="card-body">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start mb-3">
-                  <div>
-                    <h5 class="card-title mb-1">Prediksi Utama</h5>
-                    <p class="mb-0 text-muted small">
-                      Model mengidentifikasi kelas atau kualitas daun tomat sebagai berikut:
-                    </p>
-                  </div>
-                  <div class="mt-3 mt-md-0">
-                    <div class="prediction-pill">
-                      <i class="bi bi-activity"></i>
-                      <span>{{ prediction }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <hr>
-
-                <h6 class="mb-2">Detail Nilai Kemiripan</h6>
-                <p class="text-muted small mb-2">
-                  Tabel berikut menampilkan nilai kemiripan (similarity / score) antara citra input dan setiap kelas/cluster
-                  yang digunakan dalam perhitungan model.
-                </p>
-
-                <div class="table-container">
-                  {{ table | safe }}
-                </div>
-
-                <div class="mt-4 d-flex justify-content-between flex-wrap gap-2">
-                  <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Kembali ke Beranda
-                  </a>
-                  <a href="{{ url_for('index') }}#about" class="btn btn-primary">
-                    Analisis Ulang Gambar Lain
-                  </a>
-                </div>
-
-              </div>
+    <main id="main" class="mt-4">
+        <div class="container">
+            <div class="section-title">
+                <h2>Deteksi Kamera</h2>
+                <p>Arahkan kamera ke daun tomat</p>
             </div>
-          </div>
+
+            <div class="camera-container">
+                <div id="loading-overlay">
+                    <div class="spinner-border text-light" role="status"></div>
+                    <p class="mt-2">Sedang Menganalisis...</p>
+                </div>
+
+                <video id="video" autoplay playsinline></video>
+                
+                <canvas id="canvas" style="display:none;"></canvas>
+            </div>
+
+            <div class="controls">
+                <button id="snap" class="btn-capture" title="Ambil Foto"></button>
+                <p class="mt-2 text-muted">Ketuk lingkaran untuk mendeteksi</p>
+                
+                <button id="switch-camera" class="btn btn-sm btn-outline-secondary mt-2">
+                    <i class="bi bi-camera-reverse"></i> Ganti Kamera
+                </button>
+            </div>
         </div>
+    </main>
 
-      </div>
-    </section>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const snapBtn = document.getElementById('snap');
+        const switchBtn = document.getElementById('switch-camera');
+        const loading = document.getElementById('loading-overlay');
+        
+        let currentStream;
+        let facingMode = "environment"; // Default kamera belakang (untuk HP)
 
-  </main>
+        // 1. Fungsi Menyalakan Kamera
+        async function startCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            
+            const constraints = {
+                video: { 
+                    facingMode: facingMode,
+                    width: { ideal: 640 }, // Resolusi ideal (ringan buat server)
+                    height: { ideal: 640 }
+                }
+            };
 
-  <!-- Vendor JS Files -->
-  <script src="{{ url_for('static', filename='assets/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                currentStream = stream;
+            } catch (err) {
+                alert("Gagal akses kamera: " + err);
+                console.error(err);
+            }
+        }
 
+        // 2. Fungsi Ambil Gambar & Kirim ke Server
+        snapBtn.addEventListener('click', () => {
+            // Efek loading
+            loading.style.display = 'flex';
+
+            // Gambar frame video ke canvas
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Konversi canvas jadi file gambar (Blob)
+            canvas.toBlob((blob) => {
+                const formData = new FormData();
+                // 'file' harus sama dengan nama di app.py: request.files['file']
+                formData.append('file', blob, 'camera-capture.jpg'); 
+
+                // Kirim ke route '/' (index) menggunakan Fetch API
+                fetch('/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(html => {
+                    // Timpa halaman saat ini dengan hasil dari server (halaman index + hasil)
+                    document.open();
+                    document.write(html);
+                    document.close();
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Terjadi kesalahan saat mengirim gambar.");
+                    loading.style.display = 'none';
+                });
+            }, 'image/jpeg', 0.8); // Kualitas JPG 80%
+        });
+
+        // 3. Fungsi Ganti Kamera
+        switchBtn.addEventListener('click', () => {
+            facingMode = facingMode === "user" ? "environment" : "user";
+            startCamera();
+        });
+
+        // Jalankan kamera saat halaman dimuat
+        window.addEventListener('load', startCamera);
+    </script>
 </body>
-
 </html>
