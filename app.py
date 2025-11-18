@@ -60,6 +60,10 @@ def gen_frames():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    # Default values (kosongkan dulu)
+    result_image_url = None
+    label = None
+
     if request.method == 'POST':
         if 'file' not in request.files:
             return redirect(request.url)
@@ -71,8 +75,8 @@ def index():
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
 
-            # Run inference
-            results = model(filepath)
+            # Run inference (Resize ke 640 supaya cepat & hemat RAM)
+            results = model(filepath, size=640) 
             
             # Save results
             results_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'results')
@@ -86,24 +90,21 @@ def index():
             result_image_path = next((f for f in glob.glob(os.path.join(actual_results_dir, '*')) if f.endswith(('.jpg', '.jpeg', '.png'))), None)
 
             if result_image_path and os.path.exists(result_image_path):
-                # Ambil deteksi dari YOLOv5 tanpa pandas
-                detections = results.xyxy[0]  # tensor [N, 6] -> [x1, y1, x2, y2, conf, cls]
-
+                detections = results.xyxy[0]
                 if len(detections) > 0:
-                    # Ambil kelas dari deteksi pertama
-                    cls_id = int(detections[0, -1].item())  # kolom terakhir = class id
-                    label = results.names[cls_id]           # mapping id -> nama class (dari YOLO)
+                    cls_id = int(detections[0, -1].item())
+                    label = results.names[cls_id]
                 else:
                     label = 'No objects detected'
 
+                # Buat URL gambar hasil
                 result_image_url = url_for('static', filename=os.path.relpath(result_image_path, 'static'))
             else:
                 label = 'No objects detected'
                 result_image_url = None
 
-            
-
-    return render_template('index.html')
+    # KIRIM VARIABEL KE HTML DI SINI
+    return render_template('index.html', result_image_url=result_image_url, label=label)
     
 
 @app.route('/uploads/<path:filename>')
