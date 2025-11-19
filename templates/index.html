@@ -188,10 +188,9 @@
                         data-bs-toggle="modal" data-bs-target="#uploadModal">
                   Upload & Analyze
                 </button>
-                <button type="button" class="btn btn-ghost"
-                        data-bs-toggle="modal" data-bs-target="#cameraModal">
+                <a href="{{ url_for('camera') }}" class="btn btn-ghost">
                   Live Camera Detection
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -259,10 +258,9 @@
                               data-bs-toggle="modal" data-bs-target="#uploadModal">
                         Upload & Analyze
                       </button>
-                      <button type="button" class="btn btn-outline-secondary"
-                              data-bs-toggle="modal" data-bs-target="#cameraModal">
+                      <a href="{{ url_for('camera') }}" class="btn btn-outline-secondary">
                         Open Camera
-                      </button>
+                    </a>
                     </div>
                   </div>
                   <div class="col-md-7">
