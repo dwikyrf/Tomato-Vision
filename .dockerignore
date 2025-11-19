@@ -1,0 +1,7 @@
+# Standard ignores
+venv/
+__pycache__/
+*.pyc
+
+# Conflicts
+yolov5/requirements.txt
