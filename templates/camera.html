@@ -98,7 +98,8 @@
             </div>
         </div>
     </main>
-
+    <script src="{{ url_for('static', filename='assets/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script> 
+    
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
@@ -109,6 +110,7 @@
         let currentStream;
         let facingMode = "environment"; // Default kamera belakang (untuk HP)
 
+
         // 1. Fungsi Menyalakan Kamera
         async function startCamera() {
             if (currentStream) {
@@ -117,7 +119,7 @@
             
             const constraints = {
                 video: { 
-                    facingMode: facingMode,
+                    // facingMode: facingMode,
                     width: { ideal: 640 }, // Resolusi ideal (ringan buat server)
                     height: { ideal: 640 }
                 }
