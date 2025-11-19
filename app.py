@@ -119,11 +119,11 @@ def about():
 def contact():
     return render_template('contact.html')
 
-@app.route('/detection', methods=['POST'])
+@app.route('/detection', methods=['GET', 'POST'])
 def detection():
     return render_template('detection.html')
 
-@app.route('/camera', methods=['POST'])
+@app.route('/camera', methods=['GET', 'POST'])
 def camera():
     return render_template('camera.html')
 
